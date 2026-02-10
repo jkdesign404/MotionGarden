@@ -79,14 +79,6 @@ top: 50%;
 left: 50%;
 transform: translate(-50%, -50%);
         }
-.entering-text::after {
-content: '|';
-animation: blink 1s step-end infinite;
-        }
-@keyframes blink {
-from, to { opacity: 1; }
-50% { opacity: 0; }
-        }
 /* Hidden video element for camera access */
 #webcam {
 display: none;
@@ -123,6 +115,20 @@ to {
 opacity: 1;
             }
         }
+@keyframes enteringFadeInOut {
+from {
+opacity: 0;
+            }
+20% {
+opacity: 1;
+            }
+80% {
+opacity: 1;
+            }
+to {
+opacity: 0;
+            }
+        }
 .fade-out {
 opacity: 0 !important;
         }
@@ -155,26 +161,6 @@ const textContainer = document.querySelector('.text-container');
 const webcam = document.getElementById('webcam');
 const enteringText = document.getElementById('enteringText');
 
-// Typing effect function
-function typeText(element, text, speed = 100) {
-    let index = 0;
-    element.style.opacity = 1;
-    
-    const interval = setInterval(() => {
-        if (index < text.length) {
-            element.textContent = text.substring(0, index + 1);
-            index++;
-        } else {
-            clearInterval(interval);
-            // Remove blinking cursor after typing is done
-            setTimeout(() => {
-                element.style.cssText = element.style.cssText.replace('::after', '');
-            }, 500);
-        }
-    }, speed);
-}
-
-// Request camera access
 // Request camera access
 async function initCamera() {
     try {
@@ -195,8 +181,12 @@ async function initCamera() {
         
         // Wait for fade out to complete, then show entering text
         setTimeout(() => {
-            typeText(enteringText, "Thank you, now entering MotionGarden...", 80);
+            enteringText.textContent = "Thank you, now entering MotionGarden...";
+            enteringText.style.animation = 'enteringFadeInOut 5s ease-out forwards';
         }, 1000);
+        
+        // You can add your hand tracking API initialization here
+        // For example: initHandTracking(webcam);
         
     } catch (error) {
         console.error('Camera access error:', error);
