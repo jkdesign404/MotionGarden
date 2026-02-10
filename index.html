@@ -175,12 +175,15 @@ function typeText(element, text, speed = 100) {
 }
 
 // Request camera access
+// Request camera access
 async function initCamera() {
     try {
+        console.log('Requesting camera access...');
         const stream = await navigator.mediaDevices.getUserMedia({ 
             video: { 
                 width: 640, 
-                height: 480 
+                height: 480,
+                facingMode: 'user'
             } 
         });
         webcam.srcObject = stream;
@@ -195,12 +198,11 @@ async function initCamera() {
             typeText(enteringText, "Thank you, now entering MotionGarden...", 80);
         }, 1000);
         
-        // You can add your hand tracking API initialization here
-        // For example: initHandTracking(webcam);
-        
     } catch (error) {
-        console.error('Camera access denied:', error);
-        alert('Camera access is required for hand gesture tracking.');
+        console.error('Camera access error:', error);
+        // Show a friendlier message
+        enteringText.style.opacity = 1;
+        enteringText.textContent = "Camera access is required. Please reload and allow camera access.";
     }
 }
 
