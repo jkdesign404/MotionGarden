@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motion Garden</title>
+<style>
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+cursor: none;
+        }
+body {
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+background-color: #ECEBE9;
+font-family: Karrik, sans-serif;
+src: url('Karrik_Regular.ttf') format('truetype');
+overflow: hidden;
+        }
+.cursor {
+width: 20px;
+height: 20px;
+border: 2px solid #0000ff;
+border-radius: 50%;
+position: fixed;
+pointer-events: none;
+z-index: 9999;
+transform: translate(-50%, -50%);
+        }
+.image-container {
+max-width: 90%;
+max-height: 90vh;
+animation: zoomIn 2s ease-out forwards;
+transition: transform 0.3s ease, opacity 0.8s ease;
+        }
+.image-container img {
+width: 100%;
+height: auto;
+transition: transform 0.3s ease;
+        }
+.text-container {
+margin-top: 30px;
+position: relative;
+width: 100%;
+text-align: center;
+transition: transform 0.3s ease, opacity 0.8s ease;
+        }
+.fade-text {
+font-size: 2rem;
+color: #0000ff;
+opacity: 0;
+animation: fadeInOut 4s ease-out 2s forwards;
+position: absolute;
+width: 100%;
+left: 0;
+        }
+.fade-text-second {
+font-size: 2rem;
+color: #0000ff;
+opacity: 0;
+animation: fadeIn 1.5s ease-out 6s forwards;
+position: absolute;
+width: 100%;
+left: 0;
+        }
+.entering-text {
+font-size: 2rem;
+color: #0000ff;
+opacity: 0;
+text-align: center;
+position: fixed;
+width: 100%;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+        }
+.entering-text::after {
+content: '|';
+animation: blink 1s step-end infinite;
+        }
+@keyframes blink {
+from, to { opacity: 1; }
+50% { opacity: 0; }
+        }
+/* Hidden video element for camera access */
+#webcam {
+display: none;
+        }
+@keyframes zoomIn {
+from {
+transform: scale(0.5);
+opacity: 0;
+            }
+to {
+transform: scale(1);
+opacity: 1;
+            }
+        }
+@keyframes fadeInOut {
+from {
+opacity: 0;
+            }
+25% {
+opacity: 1;
+            }
+75% {
+opacity: 1;
+            }
+to {
+opacity: 0;
+            }
+        }
+@keyframes fadeIn {
+from {
+opacity: 0;
+            }
+to {
+opacity: 1;
+            }
+        }
+.fade-out {
+opacity: 0 !important;
+        }
+</style>
+</head>
+<body>
+<div class="cursor"></div>
+<div class="image-container">
+<img src="Logo.png" >
+</div>
+<div class="text-container">
+<div class="fade-text">
+    Welcome user
+</div>
+<div class="fade-text-second">
+    Please allow for camera access.
+</div>
+</div>
+
+<div class="entering-text" id="enteringText"></div>
+
+<!-- Hidden video element for webcam -->
+<video id="webcam" autoplay playsinline></video>
+
+<script>
+const cursor = document.querySelector('.cursor');
+const imageContainer = document.querySelector('.image-container');
+const image = document.querySelector('.image-container img');
+const textContainer = document.querySelector('.text-container');
+const webcam = document.getElementById('webcam');
+const enteringText = document.getElementById('enteringText');
+
+// Typing effect function
+function typeText(element, text, speed = 100) {
+    let index = 0;
+    element.style.opacity = 1;
+    
+    const interval = setInterval(() => {
+        if (index < text.length) {
+            element.textContent = text.substring(0, index + 1);
+            index++;
+        } else {
+            clearInterval(interval);
+            // Remove blinking cursor after typing is done
+            setTimeout(() => {
+                element.style.cssText = element.style.cssText.replace('::after', '');
+            }, 500);
+        }
+    }, speed);
+}
+
+// Request camera access
+async function initCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: 640, 
+                height: 480 
+            } 
+        });
+        webcam.srcObject = stream;
+        console.log('Camera access granted');
+        
+        // Fade out all assets
+        imageContainer.classList.add('fade-out');
+        textContainer.classList.add('fade-out');
+        
+        // Wait for fade out to complete, then show entering text
+        setTimeout(() => {
+            typeText(enteringText, "Thank you, now entering MotionGarden...", 80);
+        }, 1000);
+        
+        // You can add your hand tracking API initialization here
+        // For example: initHandTracking(webcam);
+        
+    } catch (error) {
+        console.error('Camera access denied:', error);
+        alert('Camera access is required for hand gesture tracking.');
+    }
+}
+
+// Initialize camera after page loads
+window.addEventListener('load', () => {
+    // Wait for the "Please allow camera access" text to appear
+    setTimeout(() => {
+        initCamera();
+    }, 6000); // Matches the timing of the second text appearing
+});
+
+// Parallax effect
+document.addEventListener('mousemove', (e) => {
+    // Move custom cursor
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top = e.clientY + 'px';
+    
+    // Calculate movement based on mouse position (centered at 0)
+    const x = (e.clientX / window.innerWidth - 0.5) * 20;  // -10 to +10
+    const y = (e.clientY / window.innerHeight - 0.5) * 20; // -10 to +10
+    
+    // Apply parallax effect to elements
+    imageContainer.style.transform = `scale(1) translate(${x}px, ${y}px)`;
+    image.style.transform = `translate(${x * 0.5}px, ${y * 0.5}px)`;
+    textContainer.style.transform = `translate(${x * 1.5}px, ${y * 1.5}px)`;
+});
+</script>
+</body>
+</html>
