@@ -10,7 +10,7 @@ margin: 0;
 padding: 0;
 box-sizing: border-box;
 cursor: none;
-        }
+}
 body {
 min-height: 100vh;
 display: flex;
@@ -19,9 +19,8 @@ justify-content: center;
 align-items: center;
 background-color: #ECEBE9;
 font-family: Karrik, sans-serif;
-src: url('Karrik_Regular.ttf') format('truetype');
 overflow: hidden;
-        }
+}
 .cursor {
 width: 20px;
 height: 20px;
@@ -31,25 +30,25 @@ position: fixed;
 pointer-events: none;
 z-index: 9999;
 transform: translate(-50%, -50%);
-        }
+}
 .image-container {
 max-width: 90%;
 max-height: 90vh;
 animation: zoomIn 2s ease-out forwards;
 transition: transform 0.3s ease, opacity 0.8s ease;
-        }
+}
 .image-container img {
 width: 100%;
 height: auto;
 transition: transform 0.3s ease;
-        }
+}
 .text-container {
 margin-top: 30px;
 position: relative;
 width: 100%;
 text-align: center;
 transition: transform 0.3s ease, opacity 0.8s ease;
-        }
+}
 .fade-text {
 font-size: 2rem;
 color: #0000ff;
@@ -58,7 +57,7 @@ animation: fadeInOut 4s ease-out 2s forwards;
 position: absolute;
 width: 100%;
 left: 0;
-        }
+}
 .fade-text-second {
 font-size: 2rem;
 color: #0000ff;
@@ -67,7 +66,7 @@ animation: fadeIn 1.5s ease-out 6s forwards;
 position: absolute;
 width: 100%;
 left: 0;
-        }
+}
 .entering-text {
 font-size: 2rem;
 color: #0000ff;
@@ -78,165 +77,319 @@ width: 100%;
 top: 50%;
 left: 50%;
 transform: translate(-50%, -50%);
-        }
-/* Hidden video element for camera access */
-#webcam {
-display: none;
-        }
+z-index: 100;
+}
+
+/* ── Border glow — shown only when hands detected ── */
+#borderGlow {
+position: fixed;
+inset: 0;
+pointer-events: none;
+z-index: 50;
+opacity: 0;
+transition: opacity 0.7s ease;
+background:
+  radial-gradient(ellipse at top left,      rgba(0,0,255,0.60) 0%, rgba(236,235,233,0) 42%),
+  radial-gradient(ellipse at top right,     rgba(0,0,255,0.60) 0%, rgba(236,235,233,0) 42%),
+  radial-gradient(ellipse at bottom left,   rgba(0,0,255,0.60) 0%, rgba(236,235,233,0) 42%),
+  radial-gradient(ellipse at bottom right,  rgba(0,0,255,0.60) 0%, rgba(236,235,233,0) 42%),
+  radial-gradient(ellipse at top center,    rgba(0,0,255,0.48) 0%, rgba(236,235,233,0) 38%),
+  radial-gradient(ellipse at bottom center, rgba(0,0,255,0.48) 0%, rgba(236,235,233,0) 38%),
+  radial-gradient(ellipse at left center,   rgba(0,0,255,0.48) 0%, rgba(236,235,233,0) 38%),
+  radial-gradient(ellipse at right center,  rgba(0,0,255,0.48) 0%, rgba(236,235,233,0) 38%);
+}
+#borderGlow.active { opacity: 1; }
+
+/* ── Hand canvas — mirrored to match selfie view ── */
+#handCanvas {
+position: fixed;
+inset: 0;
+width: 100%;
+height: 100%;
+pointer-events: none;
+z-index: 60;
+transform: scaleX(-1);
+}
+
+#webcam { display: none; }
+
 @keyframes zoomIn {
-from {
-transform: scale(0.5);
-opacity: 0;
-            }
-to {
-transform: scale(1);
-opacity: 1;
-            }
-        }
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
 @keyframes fadeInOut {
-from {
-opacity: 0;
-            }
-25% {
-opacity: 1;
-            }
-75% {
-opacity: 1;
-            }
-to {
-opacity: 0;
-            }
-        }
+  from { opacity: 0; } 25% { opacity: 1; } 75% { opacity: 1; } to { opacity: 0; }
+}
 @keyframes fadeIn {
-from {
-opacity: 0;
-            }
-to {
-opacity: 1;
-            }
-        }
+  from { opacity: 0; } to { opacity: 1; }
+}
 @keyframes enteringFadeInOut {
-from {
-opacity: 0;
-            }
-20% {
-opacity: 1;
-            }
-80% {
-opacity: 1;
-            }
-to {
-opacity: 0;
-            }
-        }
+  from { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } to { opacity: 0; }
+}
 @keyframes handPromptFadeIn {
-from {
-opacity: 0;
-            }
-to {
-opacity: 1;
-            }
-        }
+  from { opacity: 0; } to { opacity: 1; }
+}
 .fade-out {
-opacity: 0 !important;
-        }
+  opacity: 0 !important;
+  transition: opacity 0.8s ease !important;
+}
 </style>
 </head>
 <body>
+
 <div class="cursor"></div>
-<div class="image-container">
-<img src="Logo.png" >
-</div>
+<div id="borderGlow"></div>
+<canvas id="handCanvas"></canvas>
+
+<div class="image-container"><img src="Logo.png"></div>
 <div class="text-container">
-<div class="fade-text">
-    Welcome user
+  <div class="fade-text">Welcome user</div>
+  <div class="fade-text-second">Please allow for camera access.</div>
 </div>
-<div class="fade-text-second">
-    Please allow for camera access.
-</div>
-</div>
-
 <div class="entering-text" id="enteringText"></div>
-
-<!-- Hidden video element for webcam -->
 <video id="webcam" autoplay playsinline></video>
 
+<!-- MediaPipe Hands -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+
 <script>
-const cursor = document.querySelector('.cursor');
+const cursor         = document.querySelector('.cursor');
 const imageContainer = document.querySelector('.image-container');
-const image = document.querySelector('.image-container img');
-const textContainer = document.querySelector('.text-container');
-const webcam = document.getElementById('webcam');
-const enteringText = document.getElementById('enteringText');
+const image          = document.querySelector('.image-container img');
+const textContainer  = document.querySelector('.text-container');
+const webcam         = document.getElementById('webcam');
+const enteringText   = document.getElementById('enteringText');
+const borderGlow     = document.getElementById('borderGlow');
+const handCanvas     = document.getElementById('handCanvas');
+const ctx            = handCanvas.getContext('2d');
 
-// Request camera access
-async function initCamera() {
-    try {
-        console.log('Requesting camera access...');
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                width: 640, 
-                height: 480,
-                facingMode: 'user'
-            } 
-        });
-        webcam.srcObject = stream;
-        console.log('Camera access granted');
-        
-        // Fade out all assets
-        imageContainer.classList.add('fade-out');
-        textContainer.classList.add('fade-out');
-        
-        // Wait for fade out to complete, then show entering text
-        setTimeout(() => {
-            enteringText.textContent = "Thank you, now entering MotionGarden...";
-            enteringText.style.animation = 'enteringFadeInOut 5s ease-out forwards';
+function resizeCanvas() {
+  handCanvas.width  = window.innerWidth;
+  handCanvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 
-            // After the entering text animation completes (5s) + 3s delay, show hand prompt
-            setTimeout(() => {
-                enteringText.style.animation = 'none';
-                enteringText.style.opacity = '0';
+// ── Hand outline index order (convex hull pass + fingers) ──────────────────
+const OUTLINE = [0,1,2,3,4,8,12,16,20,19,18,17,0];
+const FINGERS = [[0,1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20]];
 
-                setTimeout(() => {
-                    enteringText.textContent = "now, please move your hands towards the screen";
-                    enteringText.style.animation = 'handPromptFadeIn 1.5s ease-out forwards';
-                }, 50); // tiny delay to allow style reset to flush
-            }, 5000 + 3000); // 5s for animation + 3s extra delay
-        }, 1000);
-        
-        // You can add your hand tracking API initialization here
-        // For example: initHandTracking(webcam);
-        
-    } catch (error) {
-        console.error('Camera access error:', error);
-        // Show a friendlier message
-        enteringText.style.opacity = 1;
-        enteringText.textContent = "Camera access is required. Please reload and allow camera access.";
-    }
+let handsDetected = false;
+
+// Build a path tracing the hand outline + individual finger bones
+function buildHandPath(pts) {
+  ctx.beginPath();
+  OUTLINE.forEach((idx, i) => {
+    const p = pts[idx];
+    i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+  });
+  FINGERS.forEach(finger => {
+    finger.forEach((idx, i) => {
+      const p = pts[idx];
+      i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+    });
+  });
+  ctx.closePath();
 }
 
-// Initialize camera after page loads
-window.addEventListener('load', () => {
-    // Wait for the "Please allow camera access" text to appear
-    setTimeout(() => {
-        initCamera();
-    }, 6000); // Matches the timing of the second text appearing
-});
+function drawHands(multiHandLandmarks) {
+  ctx.clearRect(0, 0, handCanvas.width, handCanvas.height);
 
-// Parallax effect
-document.addEventListener('mousemove', (e) => {
-    // Move custom cursor
-    cursor.style.left = e.clientX + 'px';
-    cursor.style.top = e.clientY + 'px';
-    
-    // Calculate movement based on mouse position (centered at 0)
-    const x = (e.clientX / window.innerWidth - 0.5) * 20;  // -10 to +10
-    const y = (e.clientY / window.innerHeight - 0.5) * 20; // -10 to +10
-    
-    // Apply parallax effect to elements
-    imageContainer.style.transform = `scale(1) translate(${x}px, ${y}px)`;
-    image.style.transform = `translate(${x * 0.5}px, ${y * 0.5}px)`;
-    textContainer.style.transform = `translate(${x * 1.5}px, ${y * 1.5}px)`;
+  if (!multiHandLandmarks || multiHandLandmarks.length === 0) {
+    if (handsDetected) {
+      handsDetected = false;
+      borderGlow.classList.remove('active');
+    }
+    return;
+  }
+
+  if (!handsDetected) {
+    handsDetected = true;
+    borderGlow.classList.add('active');
+  }
+
+  const W = handCanvas.width;
+  const H = handCanvas.height;
+
+  multiHandLandmarks.forEach(landmarks => {
+    const pts = landmarks.map(lm => ({ x: lm.x * W, y: lm.y * H }));
+    const xs   = pts.map(p => p.x);
+    const ys   = pts.map(p => p.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const r  = Math.max(maxX - minX, maxY - minY) * 0.7;
+
+    // ── Layer 1: Foggy ECEBE9 shadow blob (50% opacity) ───────────────────
+    const fog = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    fog.addColorStop(0,    'rgba(236,235,233,0.50)');
+    fog.addColorStop(0.55, 'rgba(236,235,233,0.28)');
+    fog.addColorStop(1,    'rgba(236,235,233,0.00)');
+
+    ctx.save();
+    buildHandPath(pts);
+    ctx.fillStyle = fog;
+    ctx.filter    = 'blur(22px)';
+    ctx.fill();
+    ctx.filter = 'none';
+    ctx.restore();
+
+    // ── Layer 2: Wide soft blue outer glow ────────────────────────────────
+    ctx.save();
+    buildHandPath(pts);
+    ctx.strokeStyle = 'rgba(80,110,255,0.16)';
+    ctx.lineWidth   = 32;
+    ctx.filter      = 'blur(16px)';
+    ctx.stroke();
+    ctx.filter = 'none';
+    ctx.restore();
+
+    // ── Layer 3: Mid blue glow ────────────────────────────────────────────
+    ctx.save();
+    buildHandPath(pts);
+    ctx.strokeStyle = 'rgba(60,90,255,0.30)';
+    ctx.lineWidth   = 16;
+    ctx.filter      = 'blur(7px)';
+    ctx.stroke();
+    ctx.filter = 'none';
+    ctx.restore();
+
+    // ── Layer 4: Sharp sparkle outline with shifting gradient ─────────────
+    const grad = ctx.createLinearGradient(minX, minY, maxX, maxY);
+    grad.addColorStop(0,    'rgba(190,200,255,0.95)');
+    grad.addColorStop(0.20, 'rgba(0,0,255,0.90)');
+    grad.addColorStop(0.45, 'rgba(170,190,255,1.00)');
+    grad.addColorStop(0.70, 'rgba(0,50,255,0.85)');
+    grad.addColorStop(1,    'rgba(210,220,255,0.95)');
+
+    ctx.save();
+    buildHandPath(pts);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth   = 2;
+    ctx.lineJoin    = 'round';
+    ctx.lineCap     = 'round';
+    ctx.stroke();
+    ctx.restore();
+
+    // ── Layer 5: Sparkle dots on key joints ───────────────────────────────
+    OUTLINE.forEach(idx => {
+      const p = pts[idx];
+      const size  = Math.random() * 3.5 + 1;
+      const alpha = Math.random() * 0.55 + 0.45;
+      const r = Math.floor(180 + Math.random() * 75);
+      const g = Math.floor(185 + Math.random() * 70);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+      ctx.fillStyle   = `rgba(${r},${g},255,${alpha})`;
+      ctx.shadowColor = 'rgba(0,20,255,0.95)';
+      ctx.shadowBlur  = 10;
+      ctx.fill();
+      ctx.restore();
+    });
+  });
+}
+
+// ── MediaPipe init ─────────────────────────────────────────────────────────
+function initHandTracking() {
+  if (typeof Hands === 'undefined') {
+    console.warn('MediaPipe not loaded — using mouse demo fallback');
+    startMouseFallback();
+    return;
+  }
+
+  const hands = new Hands({
+    locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+  });
+
+  hands.setOptions({
+    maxNumHands:            2,
+    modelComplexity:        1,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence:  0.5
+  });
+
+  hands.onResults(results => drawHands(results.multiHandLandmarks));
+
+  const camera = new Camera(webcam, {
+    onFrame: async () => { await hands.send({ image: webcam }); },
+    width: 640, height: 480
+  });
+  camera.start();
+}
+
+// ── Mouse fallback — move cursor to see the hand effect during dev ─────────
+function startMouseFallback() {
+  let mx = window.innerWidth / 2, my = window.innerHeight / 2;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+  function syntheticLandmarks(cx, cy) {
+    const W = window.innerWidth, H = window.innerHeight;
+    const s = 0.13;
+    const raw = [
+      [0,0.12],[−0.04,0.07],[−0.06,0.03],[−0.07,0],[−0.08,−0.03],
+      [−0.02,−0.04],[−0.02,−0.09],[−0.02,−0.13],[−0.02,−0.16],
+      [0.01,−0.05],[0.01,−0.11],[0.01,−0.15],[0.01,−0.18],
+      [0.04,−0.05],[0.04,−0.10],[0.04,−0.14],[0.04,−0.16],
+      [0.07,−0.02],[0.08,−0.06],[0.08,−0.09],[0.08,−0.12]
+    ];
+    return raw.map(([dx, dy]) => ({
+      x: (cx / W) + dx * s,
+      y: (cy / H) + dy * s
+    }));
+  }
+
+  setInterval(() => drawHands([syntheticLandmarks(mx, my)]), 1000 / 30);
+}
+
+// ── Camera access ──────────────────────────────────────────────────────────
+async function initCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480, facingMode: 'user' }
+    });
+    webcam.srcObject = stream;
+
+    imageContainer.classList.add('fade-out');
+    textContainer.classList.add('fade-out');
+
+    setTimeout(() => {
+      enteringText.textContent = "Thank you, now entering MotionGarden...";
+      enteringText.style.animation = 'enteringFadeInOut 5s ease-out forwards';
+
+      // 5s animation + 3s pause → new prompt
+      setTimeout(() => {
+        enteringText.style.animation = 'none';
+        enteringText.style.opacity   = '0';
+        setTimeout(() => {
+          enteringText.textContent = "now, please move your hands towards the screen";
+          enteringText.style.animation = 'handPromptFadeIn 1.5s ease-out forwards';
+          initHandTracking();
+        }, 50);
+      }, 8000);
+    }, 1000);
+
+  } catch (err) {
+    console.error(err);
+    enteringText.style.opacity = '1';
+    enteringText.textContent   = "Camera access is required. Please reload and allow camera access.";
+  }
+}
+
+window.addEventListener('load', () => setTimeout(initCamera, 6000));
+
+// ── Parallax ───────────────────────────────────────────────────────────────
+document.addEventListener('mousemove', e => {
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top  = e.clientY + 'px';
+  const x = (e.clientX / window.innerWidth  - 0.5) * 20;
+  const y = (e.clientY / window.innerHeight - 0.5) * 20;
+  imageContainer.style.transform = `scale(1) translate(${x}px, ${y}px)`;
+  image.style.transform          = `translate(${x * 0.5}px, ${y * 0.5}px)`;
+  textContainer.style.transform  = `translate(${x * 1.5}px, ${y * 1.5}px)`;
 });
 </script>
 </body>
