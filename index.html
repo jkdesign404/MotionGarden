@@ -129,6 +129,14 @@ to {
 opacity: 0;
             }
         }
+@keyframes handPromptFadeIn {
+from {
+opacity: 0;
+            }
+to {
+opacity: 1;
+            }
+        }
 .fade-out {
 opacity: 0 !important;
         }
@@ -183,6 +191,17 @@ async function initCamera() {
         setTimeout(() => {
             enteringText.textContent = "Thank you, now entering MotionGarden...";
             enteringText.style.animation = 'enteringFadeInOut 5s ease-out forwards';
+
+            // After the entering text animation completes (5s) + 3s delay, show hand prompt
+            setTimeout(() => {
+                enteringText.style.animation = 'none';
+                enteringText.style.opacity = '0';
+
+                setTimeout(() => {
+                    enteringText.textContent = "now, please move your hands towards the screen";
+                    enteringText.style.animation = 'handPromptFadeIn 1.5s ease-out forwards';
+                }, 50); // tiny delay to allow style reset to flush
+            }, 5000 + 3000); // 5s for animation + 3s extra delay
         }, 1000);
         
         // You can add your hand tracking API initialization here
